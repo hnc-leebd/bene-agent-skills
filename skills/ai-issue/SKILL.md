@@ -124,9 +124,14 @@ Fetched issues
 
 **How to detect state from comments:**
 - Look for the last comment containing `🤖 *AI Issue Fix*`
-- If that comment asks a question (contains `Could you`, `we need`, `Which approach`) → was blocked
-- If a **non-bot comment** exists after the AI comment → reply arrived → RESUME
-- If a linked PR exists (`gh pr list --search "Fixes #<NUMBER>"`) → SKIP
+- Parse the status keyword: `status: **resolved**`, `status: **partial**`, or `status: **blocked**`
+- If status is `resolved` → SKIP (PR already submitted)
+- If status is `blocked` or comment asks a question (`Could you`, `we need`, `Which approach`):
+  - If a **non-bot comment** exists after the AI comment → reply arrived → RESUME
+  - Otherwise → SKIP (still blocked)
+- If status is `partial` → PROCESS (incomplete work from prior session)
+- If no AI comment exists → NEW
+- Fallback: check for linked PRs (`gh pr list --search "Fixes #<NUMBER>"`)
 
 Present the triage results to the user:
 
@@ -389,34 +394,41 @@ Fixes #<NUMBER>
 - After: <passing test output>
 ```
 
+After PR creation, **always post a status comment** on the issue. This enables triage (A3) in future sessions to detect what was done.
+
+**Resolved** (PR submitted):
+
+```bash
+gh issue comment <NUMBER> --body "> 🤖 *AI Issue Fix* — status: **resolved**
+>
+> PR: #<PR_NUMBER>
+> Changes: <1-line summary>
+> Tests: <N> added, full suite passing"
+```
+
+**Partially resolved** (some sub-issues blocked):
+
+```bash
+gh issue comment <NUMBER> --body "> 🤖 *AI Issue Fix* — status: **partial**
+>
+> Resolved:
+> - <sub-issue>: PR #<PR_NUMBER>
+>
+> Blocked:
+> - <sub-issue>: waiting for <reason>"
+```
+
 ## B8. Close Parent Issue
 
 After PR submission, check if the parent issue should be closed.
 
-**All sub-issues resolved** → comment on the parent issue and close it:
+**All sub-issues resolved** → close the issue (the status comment from B7 already documents the resolution):
 
 ```bash
-gh issue comment <NUMBER> --body "> 🤖 *AI Issue Fix*
-
-All sub-issues have been resolved:
-<list of sub-issues with PR links>
-
-Closing this issue."
-
 gh issue close <NUMBER>
 ```
 
-**Some sub-issues blocked** → comment with progress summary, keep open:
-
-```bash
-gh issue comment <NUMBER> --body "> 🤖 *AI Issue Fix*
-
-Progress update:
-- Resolved: <list with PR links>
-- Blocked: <list with reasons>
-
-Keeping this issue open for remaining items."
-```
+**Some sub-issues blocked** → keep open. The B7 status comment already documents progress.
 
 **Single issue (no sub-issues)** → the `Fixes #<NUMBER>` in the PR handles auto-close on merge. No action needed.
 
