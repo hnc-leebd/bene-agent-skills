@@ -17,18 +17,54 @@ Phase A: Setup (once)
   A4. Assign all selected issues
 
 Phase B: Process each issue (loop)
-  B1. Analyze issue → extract sub-issue list
-  B2. Reproduce each sub-issue (request info if blocked)
-  B3. Create GitHub sub-issues for confirmed items
-  B4. Document reproduction attempts
+  B1. Record start time, create issue report
+  B2. Analyze issue → extract sub-issue list
+  B3. Reproduce each sub-issue (request info if blocked)
+  B4. Create GitHub sub-issues for confirmed items
   B5. TDD: write failing test → fix → verify
-  B6. Document test results
-  B7. Code review & security audit
-  B8. Create branch, commit, and submit PR
+  B6. Code review & security audit
+  B7. Create branch, commit, and submit PR
+  B8. Close parent issue (if all sub-issues resolved)
+  B9. Finalize issue report
 
 Phase C: Finalize (once)
-  C1. ROI report
+  C1. Batch summary report
   C2. Completion promise (if Ralph loop)
+```
+
+---
+
+# Report System
+
+## Report Location
+
+All reports are saved to the **project-local** `.claude/reports/` directory:
+
+```bash
+mkdir -p .claude/reports
+```
+
+Add `.claude/reports/` to `.gitignore` to avoid commit noise:
+
+```bash
+echo '.claude/reports/' >> .gitignore
+```
+
+## File Naming
+
+```
+.claude/reports/<YYYY-MM-DD>-<NUMBER>-<short-desc>.md
+```
+
+Examples:
+- `.claude/reports/2026-02-20-201-unicode-sanitization.md`
+- `.claude/reports/2026-02-20-202-gpu-detection-logging.md`
+
+**Every issue gets its own report file**, even in batch processing. A separate batch summary is created at Phase C.
+
+Batch summary naming:
+```
+.claude/reports/<YYYY-MM-DD>-batch-summary.md
 ```
 
 ---
@@ -79,7 +115,25 @@ gh issue edit <NUMBER> --add-assignee @me
 
 **Repeat for each selected issue.** If an issue is blocked, document it and move to the next.
 
-## B1. Analyze Issue
+## B1. Start Issue Report
+
+Record the start time and create the issue report file:
+
+```bash
+mkdir -p .claude/reports
+```
+
+Create `.claude/reports/<YYYY-MM-DD>-<NUMBER>-<short-desc>.md`:
+
+```markdown
+# Issue #<NUMBER>: <title>
+
+- **Start**: <YYYY-MM-DD HH:MM>
+- **Status**: in progress
+- **Issue URL**: <link>
+```
+
+## B2. Analyze Issue
 
 Read the full issue body and comments:
 
@@ -92,7 +146,9 @@ Extract a numbered list of distinct sub-issues. A single GitHub issue may contai
 - **Context**: environment, configuration, versions
 - **Affected code path**: which components are involved
 
-## B2. Reproduce Each Sub-Issue
+Append analysis to the issue report.
+
+## B3. Reproduce Each Sub-Issue
 
 For each sub-issue, attempt reproduction **before writing any fix**.
 
@@ -130,7 +186,26 @@ Which approach do you prefer?"
 
 **Cannot reproduce but understand the code path** → document what was tried, explain the theoretical cause based on code reading, and note that full reproduction requires the reporter's environment/files.
 
-## B3. Create Sub-Issues
+Append reproduction results to the issue report:
+
+```markdown
+## Reproduction
+
+### Sub-issue 1: <title>
+
+#### Environment
+- OS, runtime versions, relevant config
+
+#### Steps
+1. Step taken
+2. Step taken
+
+#### Result
+- **Reproduced**: Yes/No
+- **Error output**: (exact message)
+```
+
+## B4. Create Sub-Issues
 
 Only create sub-issues for items confirmed through analysis. Each sub-issue must reference the parent issue:
 
@@ -139,29 +214,6 @@ gh issue create --title "<type>: <description>" --assignee @me --body "Derived f
 ```
 
 Skip sub-issue creation if the parent issue contains only a single problem.
-
-## B4. Document Reproduction
-
-Create `~/.claude/reports/issue-<NUMBER>-report.md`:
-
-```markdown
-# Issue #<NUMBER> Reproduction Report
-
-## Sub-issue 1: <title>
-
-### Environment
-- OS, runtime versions, relevant config
-
-### Reproduction Steps
-1. Step taken
-2. Step taken
-3. ...
-
-### Result
-- **Reproduced**: Yes/No
-- **Error output**: (exact message)
-- **Attempts**: what was tried if reproduction failed
-```
 
 ## B5. TDD Fix
 
@@ -178,12 +230,10 @@ Test locations by language:
 - Python: `python -m pytest <test_file>::<TestClass>::<test_method> -v`
 - Full suite: `./scripts/test-java.sh` or `python -m pytest`
 
-## B6. Document Test Results
-
-Append to `~/.claude/reports/issue-<NUMBER>-report.md`:
+Append test results to the issue report:
 
 ```markdown
-## Fix Verification
+## Fix
 
 ### Sub-issue 1: <title>
 
@@ -200,7 +250,7 @@ Append to `~/.claude/reports/issue-<NUMBER>-report.md`:
 - Full suite: PASS (no regressions)
 ```
 
-## B7. Code Review & Security Audit
+## B6. Code Review & Security Audit
 
 Before creating a PR, perform a self-review of all changes. This step catches issues that tests alone cannot.
 
@@ -230,11 +280,11 @@ Scan all changes for vulnerabilities:
 
 ### Actions
 
-- **Issue found** → fix it before proceeding to B8. Re-run tests after fixing.
-- **No issues** → proceed to B8.
+- **Issue found** → fix it before proceeding to B7. Re-run tests after fixing.
+- **No issues** → proceed to B7.
 - **Uncertain** → flag it in the PR description under a "Security Notes" section for human review.
 
-### Append to report
+### Append to issue report
 
 ```markdown
 ## Code Review & Security Audit
@@ -254,7 +304,7 @@ Scan all changes for vulnerabilities:
 - Dependency risk: PASS / N/A
 ```
 
-## B8. Branch, Commit, PR
+## B7. Branch, Commit, PR
 
 ```bash
 # Branch naming
@@ -291,7 +341,53 @@ Fixes #<NUMBER>
 - After: <passing test output>
 ```
 
-**After B8, loop back to B1 for the next issue.**
+## B8. Close Parent Issue
+
+After PR submission, check if the parent issue should be closed.
+
+**All sub-issues resolved** → comment on the parent issue and close it:
+
+```bash
+gh issue comment <NUMBER> --body "> 🤖 *AI Issue Fix*
+
+All sub-issues have been resolved:
+<list of sub-issues with PR links>
+
+Closing this issue."
+
+gh issue close <NUMBER>
+```
+
+**Some sub-issues blocked** → comment with progress summary, keep open:
+
+```bash
+gh issue comment <NUMBER> --body "> 🤖 *AI Issue Fix*
+
+Progress update:
+- Resolved: <list with PR links>
+- Blocked: <list with reasons>
+
+Keeping this issue open for remaining items."
+```
+
+**Single issue (no sub-issues)** → the `Fixes #<NUMBER>` in the PR handles auto-close on merge. No action needed.
+
+## B9. Finalize Issue Report
+
+Record end time and update the issue report header:
+
+```markdown
+# Issue #<NUMBER>: <title>
+
+- **Start**: <YYYY-MM-DD HH:MM>
+- **End**: <YYYY-MM-DD HH:MM>
+- **Duration**: <Xm>
+- **Status**: resolved / blocked / partial
+- **PR**: #<PR_NUMBER>
+- **Issue URL**: <link>
+```
+
+**After B9, loop back to B1 for the next issue.**
 
 ---
 
@@ -299,12 +395,33 @@ Fixes #<NUMBER>
 
 Run once after all issues in Phase B are processed.
 
-## C1. ROI Report
+## C1. Batch Summary Report
 
-Append a summary to `~/.claude/reports/issue-<NUMBER>-report.md` (or a batch report for multiple issues):
+Create `.claude/reports/<YYYY-MM-DD>-batch-summary.md`:
 
 ```markdown
-## ROI Summary
+# AI Issue Fix — Batch Summary
+
+- **Date**: <YYYY-MM-DD>
+- **Session start**: <HH:MM>
+- **Session end**: <HH:MM>
+- **Total duration**: <Xh Xm>
+
+## Results
+
+| Issue | Title | Status | Duration | PR | Notes |
+|:------|:------|:-------|:---------|:---|:------|
+| #<N> | <title> | resolved / blocked | <Xm> | #<PR> | <brief> |
+
+## Token Usage
+
+| Metric | Value |
+|:-------|:------|
+| Start tokens | <N> |
+| End tokens | <N> |
+| Tokens used | <delta> |
+
+## Summary
 
 | Metric | Value |
 |:-------|:------|
@@ -312,20 +429,11 @@ Append a summary to `~/.claude/reports/issue-<NUMBER>-report.md` (or a batch rep
 | Resolved | <N> / <N> |
 | Blocked (need info) | <N> |
 | PRs submitted | <N> |
-| Tokens used | <end_tokens - start_tokens> |
 ```
 
 ### Token measurement (end)
 
 Run the same ccusage command from Phase A, compute `end - start` for totalTokens.
-
-### Processing result per issue
-
-```markdown
-| Issue | Status | PR | Notes |
-|:------|:-------|:---|:------|
-| #<N> <title> | resolved / blocked / skipped | #<PR> | <brief> |
-```
 
 ## C2. Completion Promises (Ralph Wiggum Integration)
 
@@ -345,7 +453,7 @@ When running inside a Ralph loop (`/ralph-loop`), output exactly ONE of these pr
 
 ### Rules
 
-- Output the promise **after** the ROI report (C1), never before.
+- Output the promise **after** the batch summary report (C1), never before.
 - If no unassigned issues exist at A2, output `<promise>AI_ISSUE_DONE</promise>` immediately.
 - Always set `--max-iterations` as a safety net when using Ralph.
 
