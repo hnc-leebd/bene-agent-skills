@@ -445,7 +445,20 @@ After PR submission, check if the parent issue should be closed.
 gh issue close <NUMBER>
 ```
 
-**Some sub-issues blocked** → keep open. The B7 status comment already documents progress.
+**Some sub-issues blocked** → keep open, and post a progress summary on the parent issue:
+
+```bash
+gh issue comment <PARENT_NUMBER> --body "> 🤖 *AI Issue Fix* — progress update
+>
+> Sub-issue status:
+> - #<N1> ✅ resolved (PR #<PR1>)
+> - #<N2> ✅ resolved (PR #<PR2>)
+> - #<N3> ⏳ blocked (waiting for <reason>)
+>
+> Progress: <resolved>/<total> resolved"
+```
+
+This enables faster triage in A3 — the parent issue shows overall progress at a glance.
 
 **Single issue (no sub-issues)** → the `Fixes #<NUMBER>` in the PR handles auto-close on merge. No action needed.
 
