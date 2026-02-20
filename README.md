@@ -41,12 +41,12 @@ Register this repository as a Claude Code Plugin marketplace:
 Then install the plugin:
 
 ```
-/plugin install bene-agent-skills@bene-agent-skills
+/plugin install bene@bene
 ```
 
 Or browse and install interactively:
 1. Run `/plugin` and select `Browse and install plugins`
-2. Select `bene-agent-skills`
+2. Select `bene`
 3. Select `Install now`
 
 ## Auto-Update
@@ -54,7 +54,7 @@ Or browse and install interactively:
 Third-party marketplaces don't auto-update by default. To enable:
 
 ```
-/plugin marketplace update bene-agent-skills
+/plugin marketplace update bene
 ```
 
 Or enable auto-update permanently in `~/.claude/settings.json`:
@@ -62,7 +62,7 @@ Or enable auto-update permanently in `~/.claude/settings.json`:
 ```json
 {
   "marketplaceAutoUpdate": {
-    "bene-agent-skills": true
+    "bene": true
   }
 }
 ```
@@ -79,8 +79,8 @@ After installing, just invoke the skill:
 ## Uninstall
 
 ```
-/plugin uninstall bene-agent-skills@bene-agent-skills
-/plugin marketplace remove bene-agent-skills
+/plugin uninstall bene@bene
+/plugin marketplace remove bene
 ```
 
 # License

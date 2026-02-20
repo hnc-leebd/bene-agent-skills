@@ -1,5 +1,5 @@
 {
-  "name": "bene-agent-skills",
+  "name": "bene",
   "owner": {
     "name": "Benedict Lee",
     "email": "hnc.leebd@gmail.com"
@@ -10,10 +10,9 @@
   },
   "plugins": [
     {
-      "name": "bene-agent-skills",
-      "description": "Collection of AI-powered development workflow skills including automated issue fixing with TDD",
+      "name": "bene",
+      "description": "AI-powered development workflow skills including automated issue fixing with TDD",
       "source": "./",
-      "strict": false,
       "skills": [
         "./skills/ai-issue"
       ]
