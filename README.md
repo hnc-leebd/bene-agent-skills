@@ -35,7 +35,7 @@ Fetches unassigned open GitHub issues, analyzes them, reproduces bugs, writes fa
 Register this repository as a Claude Code Plugin marketplace:
 
 ```
-/plugin marketplace add hnc-leebd/bene-agent-skills
+/plugin marketplace add hnc-leebd/skills
 ```
 
 Then install the plugin:
