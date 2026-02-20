@@ -378,20 +378,37 @@ PR body template:
 ## Summary
 Fixes #<NUMBER>
 
-<1-3 bullet points>
+<1-3 bullet points describing the problem and fix>
 
-## Environment
-<OS, runtime, relevant config>
+## Problem
+<What was broken and why — root cause, not just symptoms>
+
+## Changes
+<List of changed files with brief description of each change>
+- `path/to/file.java` — <what changed and why>
+- `path/to/test.java` — <new test covering the bug>
+
+## Approach
+<Why this approach was chosen over alternatives, if non-obvious>
 
 ## Reproduction
 <Steps to reproduce the original error>
 
-## Test
-<Test name and what it verifies>
+```bash
+<exact commands to trigger the bug on the base branch>
+```
 
-## Result
-- Before: <error>
-- After: <passing test output>
+## How to Test
+
+```bash
+<exact commands for the reviewer to verify the fix>
+```
+
+- Before (on base branch): <error message>
+- After (on this branch): <passing output>
+
+## Breaking Changes
+None / <description of any breaking changes and migration steps>
 ```
 
 After PR creation, **always post a status comment** on the issue. This enables triage (A3) in future sessions to detect what was done.
