@@ -1,0 +1,22 @@
+{
+  "name": "bene-agent-skills",
+  "owner": {
+    "name": "Benedict Lee",
+    "email": "hnc.leebd@gmail.com"
+  },
+  "metadata": {
+    "description": "AI-powered development workflow skills for Claude Code",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "bene-agent-skills",
+      "description": "Collection of AI-powered development workflow skills including automated issue fixing with TDD",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/ai-issue"
+      ]
+    }
+  ]
+}
