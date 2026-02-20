@@ -1,6 +1,6 @@
 ---
 name: ai-issue
-description: "Automatically fix GitHub issues with TDD approach. Use when the user says '/ai-issue', 'fix issues', 'process open issues', or wants to automatically analyze and fix unassigned GitHub issues. Workflow: fetch unassigned open issues, assign, analyze, reproduce errors, write failing tests, fix, and submit PR."
+description: "Automatically fix GitHub issues with TDD approach. Use when the user says '/ai-issue', 'fix issues', 'process open issues', or wants to automatically analyze and fix unassigned GitHub issues. Workflow: fetch open issues (unassigned or assigned to me), triage, assign, analyze, reproduce errors, write failing tests, fix, and submit PR."
 ---
 
 # AI Issue Fix
@@ -12,9 +12,10 @@ Automatically analyze, reproduce, and fix GitHub issues using a TDD workflow.
 ```
 Phase A: Setup (once)
   A1. Measure token baseline
-  A2. Fetch unassigned open issues
-  A3. Select issues to process
-  A4. Assign all selected issues
+  A2. Fetch open issues (unassigned or assigned to me)
+  A3. Triage each issue (classify action needed)
+  A4. Select issues to process
+  A5. Assign all selected issues
 
 Phase B: Process each issue (loop)
   B1. Record start time, create issue report
@@ -87,27 +88,74 @@ Save this value. Used in Phase C for cost calculation.
 
 ## A2. Fetch Issues
 
-Note: `gh issue list --assignee ""` does NOT reliably filter unassigned issues. Instead, fetch all open issues and filter client-side using jq:
+Fetch all open issues that are either **unassigned** or **assigned to me**:
 
 ```bash
-gh issue list --state open --json number,title,labels,body,assignees --limit 20 \
-  | jq '[.[] | select(.assignees | length == 0)]'
+ME=$(gh api user --jq '.login')
+gh issue list --state open --json number,title,labels,body,assignees,comments --limit 50 \
+  | jq --arg me "$ME" '[.[] | select(
+    (.assignees | length == 0) or
+    (.assignees | any(.login == $me))
+  )]'
 ```
 
-## A3. Select Issues
+## A3. Triage Issues
 
-Present the list to the user and ask which issues to work on:
+For each fetched issue, the agent reads the issue body and latest comments to classify the required action:
+
+```
+Fetched issues
+    │
+    ├─ New (unassigned, no prior AI work)
+    │     → action: PROCESS
+    │
+    ├─ Mine + blocked, waiting for user reply
+    │     ├─ New reply arrived since last AI comment
+    │     │     → action: RESUME (re-enter Phase B)
+    │     └─ No new reply
+    │           → action: SKIP (still blocked)
+    │
+    ├─ Mine + PR already submitted (linked PR exists)
+    │     → action: SKIP
+    │
+    └─ Mine + no PR, no blocked comment
+          → action: PROCESS (may be incomplete from prior session)
+```
+
+**How to detect state from comments:**
+- Look for the last comment containing `🤖 *AI Issue Fix*`
+- If that comment asks a question (contains `Could you`, `we need`, `Which approach`) → was blocked
+- If a **non-bot comment** exists after the AI comment → reply arrived → RESUME
+- If a linked PR exists (`gh pr list --search "Fixes #<NUMBER>"`) → SKIP
+
+Present the triage results to the user:
+
+```
+Issues to process:
+  #201 [NEW]    Unicode sanitization in hybrid server
+  #203 [RESUME] Troubleshooting guide — user replied with details
+  #205 [NEW]    Publish Docker image
+
+Skipped:
+  #202 [SKIP]   GPU detection — PR #208 already submitted
+  #204 [SKIP]   Replace invalid chars — waiting for user reply (no response yet)
+```
+
+## A4. Select Issues
+
 - If `/ai-issue <number>` was invoked with a specific issue number, skip selection and use that issue directly.
-- If the user says "all" or doesn't specify, process **all** unassigned issues sequentially.
-- Otherwise, let the user pick one or more issues from the list.
+- If the user says "all" or doesn't specify, process **all** PROCESS + RESUME issues sequentially.
+- Otherwise, let the user pick from the triage list.
 
-## A4. Assign Issues
+## A5. Assign Issues
 
-Assign all selected issues immediately to prevent duplicate work:
+Assign all selected unassigned issues immediately to prevent duplicate work:
 
 ```bash
 gh issue edit <NUMBER> --add-assignee @me
 ```
+
+Already-assigned issues (mine) need no reassignment.
 
 ---
 
