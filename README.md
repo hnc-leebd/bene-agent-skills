@@ -49,6 +49,24 @@ Or browse and install interactively:
 2. Select `bene-agent-skills`
 3. Select `Install now`
 
+## Auto-Update
+
+Third-party marketplaces don't auto-update by default. To enable:
+
+```
+/plugin marketplace update bene-agent-skills
+```
+
+Or enable auto-update permanently in `~/.claude/settings.json`:
+
+```json
+{
+  "marketplaceAutoUpdate": {
+    "bene-agent-skills": true
+  }
+}
+```
+
 ## Usage
 
 After installing, just invoke the skill:
